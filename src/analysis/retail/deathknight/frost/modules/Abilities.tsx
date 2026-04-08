@@ -1,6 +1,5 @@
 import SPELLS from 'common/SPELLS';
 import talents from 'common/TALENTS/deathknight';
-import { SpellLink } from 'interface';
 import CoreAbilities from 'parser/core/modules/Abilities';
 import { SpellbookAbility } from 'parser/core/modules/Ability';
 import SPELL_CATEGORY from 'parser/core/SPELL_CATEGORY';
@@ -9,18 +8,17 @@ class Abilities extends CoreAbilities {
   spellbook(): SpellbookAbility[] {
     const combatant = this.selectedCombatant;
     return [
-      // COOLDOWNS
+      // region Cooldowns
       {
         spell: talents.PILLAR_OF_FROST_TALENT.id,
         buffSpellId: talents.PILLAR_OF_FROST_TALENT.id,
         category: SPELL_CATEGORY.COOLDOWNS,
         gcd: null,
-        cooldown: 60,
+        cooldown: 30,
         enabled: combatant.hasTalent(talents.PILLAR_OF_FROST_TALENT),
         castEfficiency: {
           suggestion: true,
           recommendedEfficiency: 0.85,
-          extraSuggestion: 'You should aim to use this off CD.',
         },
         timelineSortIndex: 0,
       },
@@ -29,17 +27,11 @@ class Abilities extends CoreAbilities {
         buffSpellId: talents.EMPOWER_RUNE_WEAPON_TALENT.id,
         category: SPELL_CATEGORY.COOLDOWNS,
         gcd: null,
-        cooldown: 120,
+        cooldown: 45,
+        charges: 2,
         castEfficiency: {
           suggestion: true,
           recommendedEfficiency: 0.8,
-          extraSuggestion: (
-            <>
-              You should use this with every{' '}
-              <SpellLink spell={talents.BREATH_OF_SINDRAGOSA_TALENT} /> if it is talented. Otherwise
-              use it with <SpellLink spell={talents.PILLAR_OF_FROST_TALENT} />.
-            </>
-          ),
         },
         timelineSortIndex: 1,
       },
@@ -48,12 +40,10 @@ class Abilities extends CoreAbilities {
         buffSpellId: talents.BREATH_OF_SINDRAGOSA_TALENT.id,
         category: SPELL_CATEGORY.COOLDOWNS,
         gcd: null,
-        cooldown: 120,
+        cooldown: 90,
         castEfficiency: {
           suggestion: true,
           recommendedEfficiency: 0.9,
-          extraSuggestion:
-            'You should only save this if there is a mechanic you will need to deal with in the next 30 seconds or if you need to save it for a particular phase',
         },
         timelineSortIndex: 2,
         enabled: combatant.hasTalent(talents.BREATH_OF_SINDRAGOSA_TALENT),
@@ -64,27 +54,22 @@ class Abilities extends CoreAbilities {
         gcd: {
           base: 1500,
         },
-        cooldown: 180,
+        cooldown: 90,
         castEfficiency: {
           suggestion: true,
           recommendedEfficiency: 0.9,
-          extraSuggestion: (
-            <>
-              Although you normally want to use this off CD, you can save it to line it up with{' '}
-              <SpellLink spell={talents.PILLAR_OF_FROST_TALENT} icon />. You can also hold it if you
-              know there will be an opportunity to hit many enemies.
-            </>
-          ),
         },
         enabled: combatant.hasTalent(talents.FROSTWYRMS_FURY_TALENT),
       },
       {
-        spell: talents.RAISE_DEAD_SHARED_TALENT.id,
+        spell: SPELLS.FROSTWYRMS_FURY_CHOSEN.id,
         category: SPELL_CATEGORY.COOLDOWNS,
-        gcd: null,
-        cooldown: combatant.hasTalent(talents.DEATHS_MESSENGER_TALENT) ? 90 : 120,
+        gcd: {
+          base: 1500,
+        },
+        enabled: combatant.hasTalent(talents.CHOSEN_OF_FROSTBROOD_1_FROST_TALENT),
       },
-      // ROTATIONAL
+      // region Rotational
       {
         spell: talents.OBLITERATE_TALENT.id,
         category: SPELL_CATEGORY.ROTATIONAL,
@@ -122,11 +107,6 @@ class Abilities extends CoreAbilities {
       {
         spell: talents.FROSTSCYTHE_TALENT.id,
         category: SPELL_CATEGORY.ROTATIONAL_AOE,
-        cooldown: 30,
-        castEfficiency: {
-          suggestion: true,
-          recommendedEfficiency: 0.75,
-        },
         gcd: {
           base: 1500,
         },
@@ -140,13 +120,13 @@ class Abilities extends CoreAbilities {
         },
       },
       {
-        spell: talents.SACRIFICIAL_PACT_TALENT.id,
-        category: SPELL_CATEGORY.COOLDOWNS,
-        cooldown: 120,
+        spell: talents.RAISE_DEAD_TALENT.id,
+        category: SPELL_CATEGORY.ROTATIONAL,
         gcd: {
           base: 1500,
         },
-        enabled: combatant.hasTalent(talents.SACRIFICIAL_PACT_TALENT),
+        cooldown: combatant.hasTalent(talents.DEATHS_MESSENGER_TALENT) ? 90 : 120,
+        enabled: combatant.hasTalent(talents.RAISE_DEAD_TALENT),
       },
       {
         spell: talents.REAPERS_MARK_TALENT.id,
@@ -162,7 +142,7 @@ class Abilities extends CoreAbilities {
         enabled: combatant.hasTalent(talents.REAPERS_MARK_TALENT),
       },
 
-      // DEFENSIVE
+      // region Defensives
       //May require additional logic here for unyielding will
       {
         spell: SPELLS.ANTI_MAGIC_SHELL.id,
@@ -213,13 +193,14 @@ class Abilities extends CoreAbilities {
         cooldown: combatant.hasTalent(talents.DEATHS_MESSENGER_TALENT) ? 90 : 120,
         isDefensive: true,
       },
-      // UTILITY
+      // region Utility
       {
         spell: SPELLS.DEATH_GRIP.id,
         category: SPELL_CATEGORY.UTILITY,
         gcd: {
           static: 500,
         },
+        cooldown: 15,
         charges: combatant.hasTalent(talents.DEATHS_ECHO_TALENT) ? 2 : 1,
       },
       {
@@ -268,6 +249,7 @@ class Abilities extends CoreAbilities {
         gcd: {
           base: 1500,
         },
+        cooldown: 45,
         enabled: combatant.hasTalent(talents.ASPHYXIATE_TALENT),
       },
       {
@@ -302,8 +284,7 @@ class Abilities extends CoreAbilities {
         gcd: {
           base: 1500,
         },
-        cooldown: combatant.hasTalent(talents.MAWSWORN_MENACE_TALENT) ? 20 : 30,
-        enabled: !false,
+        cooldown: 30,
       },
       {
         spell: SPELLS.DEATH_COIL.id,

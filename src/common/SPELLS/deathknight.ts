@@ -229,40 +229,24 @@ const spells = {
     icon: 'inv_misc_rune_10',
   },
 
-  MURDEROUS_EFFICIENCY: {
-    id: 207062,
-    name: 'Murderous Efficiency',
-    icon: 'spell_frost_frostarmor',
-  },
-
-  FROST_FEVER_RP_GAIN: {
-    id: 195617,
-    name: 'Frost Fever',
-    icon: 'spell_deathknight_frostfever',
-  },
-
   RUNIC_ATTENUATION_RP_GAIN: {
     id: 221322,
     name: 'Runic Attenuation',
     icon: 'boss_odunrunes_blue',
   },
 
-  BREATH_OF_SINDRAGOSA_TALENT_RUNE_GAIN: {
-    id: 303753,
-    name: 'Breath of Sindragosa',
-    icon: 'inv_misc_rune_10',
-  },
-
-  OBLITERATION_RUNE_GAIN: {
-    id: 281327,
-    name: 'Obliteration',
-    icon: 'inv_axe_114',
-  },
   GLACIAL_ADVANCE: {
     id: 194913,
     name: 'Glacial Advance',
     icon: 'ability_hunter_glacialtrap',
     runicPowerCost: 30,
+  },
+
+  // Frostwyrm's Fury cast ID when Chosen of Frostbrood apex talent is active
+  FROSTWYRMS_FURY_CHOSEN: {
+    id: 1265384,
+    name: "Frostwyrm's Fury",
+    icon: 'inv12_apextalent_deathknight_chosenofthefrostbrood',
   },
 
   // region Unholy Specialization
