@@ -14,7 +14,7 @@ class Abilities extends CoreAbilities {
         buffSpellId: talents.PILLAR_OF_FROST_TALENT.id,
         category: SPELL_CATEGORY.COOLDOWNS,
         gcd: null,
-        cooldown: 30,
+        cooldown: 45,
         enabled: combatant.hasTalent(talents.PILLAR_OF_FROST_TALENT),
         castEfficiency: {
           suggestion: true,
