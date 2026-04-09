@@ -7,8 +7,8 @@ import { QualitativePerformance } from 'parser/ui/QualitativePerformance';
 import { PerformanceMark } from 'interface/guide';
 import { explanationAndDataSubsection } from 'interface/guide/components/ExplanationRow';
 
-// ERW grants 40 RP flat. RP cap is 125. Waste occurs if RP > 85 at cast time.
-const MAX_RP_NO_WASTE = 85;
+// ERW grants 40 RP flat. RP cap is 100. Waste occurs if RP > 60 at cast time.
+const MAX_RP_NO_WASTE = 60;
 
 interface ErwCast {
   timestamp: number;
@@ -48,7 +48,7 @@ export default class EmpowerRuneWeapon extends Analyzer {
         is an off-GCD cooldown with 2 charges that instantly deals damage, grants 40 Runic Power, a
         Killing Machine proc, and resets Rune cooldowns. Use both charges as close to on cooldown as
         possible, ideally during <SpellLink spell={talents.PILLAR_OF_FROST_TALENT} />. Avoid casting
-        when your Runic Power is above 85 — any RP granted above the 125 cap is wasted.
+        when your Runic Power is above 60 — any RP granted above the 100 cap is wasted.
       </p>
     );
 
