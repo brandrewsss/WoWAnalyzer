@@ -24,7 +24,6 @@ class Abilities extends CoreAbilities {
       },
       {
         spell: talents.EMPOWER_RUNE_WEAPON_TALENT.id,
-        buffSpellId: talents.EMPOWER_RUNE_WEAPON_TALENT.id,
         category: SPELL_CATEGORY.COOLDOWNS,
         gcd: null,
         cooldown: 45,
@@ -89,6 +88,7 @@ class Abilities extends CoreAbilities {
           suggestion: true,
           recommendedEfficiency: 0.85,
         },
+        enabled: !combatant.hasTalent(talents.FROZEN_DOMINION_TALENT),
       },
       {
         spell: talents.HOWLING_BLAST_TALENT.id,

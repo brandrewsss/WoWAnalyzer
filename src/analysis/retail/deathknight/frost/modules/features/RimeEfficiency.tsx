@@ -128,16 +128,12 @@ class RimeEfficiency extends Analyzer {
           <SpellLink spell={SPELLS.RIME} />
         </strong>{' '}
         turns <SpellLink spell={talents.HOWLING_BLAST_TALENT} /> from a weak ability you only use to
-        apply Frost Fever to a powerful spell that jumps to the top of the priority list. This is
-        especially true if <SpellLink spell={talents.AVALANCHE_TALENT} /> or{' '}
-        <SpellLink spell={talents.ICEBREAKER_TALENT} /> are talented. Rime has a chance to proc
-        whenever you cast <SpellLink spell={talents.OBLITERATE_TALENT} /> and you prevent wasting
-        the proc by making sure to consume Rime before casting Obliterate. You should aim to consume
-        as many Rimes as you can. However, there are times when other spells take priority such as
-        casting <SpellLink spell={talents.FROST_STRIKE_TALENT} /> to refresh{' '}
-        <SpellLink spell={talents.ICY_TALONS_TALENT} /> or using{' '}
-        <SpellLink spell={talents.OBLITERATE_TALENT} /> to maintain{' '}
-        <SpellLink spell={talents.BREATH_OF_SINDRAGOSA_TALENT} /> when your RP is low.
+        apply Frost Fever to a powerful spell that jumps to the top of the priority list. Rime has a
+        45% chance to proc from <SpellLink spell={talents.FROST_STRIKE_TALENT} /> and{' '}
+        <SpellLink spell={SPELLS.GLACIAL_ADVANCE} />. Each Rime consumed also reduces the cooldown
+        of <SpellLink spell={talents.EMPOWER_RUNE_WEAPON_TALENT} /> by 6 seconds via{' '}
+        <SpellLink spell={talents.FROSTBOUND_WILL_TALENT} />. You should aim to consume every Rime
+        proc immediately — letting procs expire or get overwritten is a significant loss.
       </p>
     );
 

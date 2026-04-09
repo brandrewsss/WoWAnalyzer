@@ -16,7 +16,7 @@ import AbilityTracker from 'parser/shared/modules/AbilityTracker';
 import BoringSpellValueText from 'parser/ui/BoringSpellValueText';
 import Statistic from 'parser/ui/Statistic';
 import STATISTIC_ORDER from 'parser/ui/STATISTIC_ORDER';
-import { Fragment, type JSX } from 'react';
+import { type JSX } from 'react';
 import { explanationAndDataSubsection } from 'interface/guide/components/ExplanationRow';
 import GradiatedPerformanceBar from 'interface/guide/components/GradiatedPerformanceBar';
 import RuneTracker from './RuneTracker';
@@ -42,8 +42,6 @@ class KillingMachineEfficiency extends Analyzer {
   currentStacks = 0;
   procsWastedToResources = 0;
 
-  readonly fatalFixation = true;
-
   constructor(options: Options) {
     super(options);
 
@@ -60,16 +58,14 @@ class KillingMachineEfficiency extends Analyzer {
       Events.refreshbuff.by(SELECTED_PLAYER).spell(SPELLS.KILLING_MACHINE),
       this.onRefreshBuff,
     );
-    this.fatalFixation &&
-      this.addEventListener(
-        Events.applybuffstack.by(SELECTED_PLAYER).spell(SPELLS.KILLING_MACHINE),
-        this.onApplyBuffStack,
-      );
-    this.fatalFixation &&
-      this.addEventListener(
-        Events.removebuffstack.by(SELECTED_PLAYER).spell(SPELLS.KILLING_MACHINE),
-        this.onRemoveBuffStack,
-      );
+    this.addEventListener(
+      Events.applybuffstack.by(SELECTED_PLAYER).spell(SPELLS.KILLING_MACHINE),
+      this.onApplyBuffStack,
+    );
+    this.addEventListener(
+      Events.removebuffstack.by(SELECTED_PLAYER).spell(SPELLS.KILLING_MACHINE),
+      this.onRemoveBuffStack,
+    );
   }
 
   onApplyBuff(event: ApplyBuffEvent) {
@@ -87,18 +83,12 @@ class KillingMachineEfficiency extends Analyzer {
   onRefreshBuff(event: RefreshBuffEvent) {
     const timeSinceStackRemoved = event.timestamp - this.lastProcTime;
 
-    // 4/5/23 Going from 2 -> 1 KM stacks refreshes the proc, this shouldn't be counted
-    if (this.fatalFixation && this.currentStacks === 1 && timeSinceStackRemoved < LAG_BUFFER_MS) {
-      // 3/24/23, logs refresh km whenever you go from 2 -> 1 stacks
+    if (this.currentStacks === 1 && timeSinceStackRemoved < LAG_BUFFER_MS) {
       this.lastProcTime = event.timestamp;
       return;
     }
     this.kmProcs += 1;
-    // 3/24/23, trying out disabling lag tolerance for km refreshes if the player has fatal fixation talented, may need more work
-    if (
-      (!this.fatalFixation || (this.fatalFixation && this.currentStacks === 2)) &&
-      this.runeTracker.runesAvailable < 2
-    ) {
+    if (this.currentStacks === 2 && this.runeTracker.runesAvailable < 2) {
       this.procsWastedToResources += 1;
       return;
     }
@@ -157,10 +147,14 @@ class KillingMachineEfficiency extends Analyzer {
         size="flexible"
         tooltip={
           <>
-            You wasted {this.totalWastedProcs} out of {this.totalProcs} Killing Machine procs (
-            {formatPercentage(this.wastedProcRate)}%). <br />
-            {this.expiredKMProcs} procs expired without being used and {this.refreshedKMProcs} procs
-            were overwritten by new procs.
+            <div>
+              You wasted {this.totalWastedProcs} out of {this.totalProcs} Killing Machine procs (
+              {formatPercentage(this.wastedProcRate)}%).
+            </div>
+            <div>
+              {this.expiredKMProcs} procs expired without being used and {this.refreshedKMProcs}{' '}
+              procs were overwritten by new procs.
+            </div>
           </>
         }
       >
@@ -177,7 +171,7 @@ class KillingMachineEfficiency extends Analyzer {
     const goodKms = {
       count:
         this.kmProcs - this.expiredKMProcs - this.refreshedKMProcs - this.procsWastedToResources,
-      label: 'Killing Machines cosumed',
+      label: 'Killing Machines consumed',
     };
 
     const procsWastedToResources = {
@@ -195,10 +189,7 @@ class KillingMachineEfficiency extends Analyzer {
         <b>
           <SpellLink spell={talents.KILLING_MACHINE_TALENT} />
         </b>{' '}
-        is your most important proc. You want to waste as few of them as possible. If you are
-        playing 2H Frost it is even more important because{' '}
-        <SpellLink spell={talents.OBLITERATE_TALENT} /> will be <b>the most important</b> source of
-        damage in your build.
+        is your most important proc. You want to waste as few as possible.
       </p>
     );
 

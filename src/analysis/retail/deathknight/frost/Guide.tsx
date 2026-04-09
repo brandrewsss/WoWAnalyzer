@@ -34,18 +34,9 @@ export default function Guide({ modules, events, info }: GuideProps<typeof Comba
             {modules.runicPowerGraph.plot}
           </span>
         </SubSection>
-        {info.combatant.hasTalent(talents.BREATH_OF_SINDRAGOSA_TALENT) && (
+        {info.combatant.hasTalent(talents.EMPOWER_RUNE_WEAPON_TALENT) && (
           <SubSection title="Resource Cooldowns">
-            <span>
-              Getting the most out of resource cooldowns while playing{' '}
-              <SpellLink spell={talents.BREATH_OF_SINDRAGOSA_TALENT} />
-              is crucial to achieving good performance with this build. You want to use your
-              resource cooldowns as often as possible to maximize how many resources you can put
-              into a single <SpellLink spell={talents.BREATH_OF_SINDRAGOSA_TALENT} /> cast without
-              wasting any of the resources granted.
-              {info.combatant.hasTalent(talents.EMPOWER_RUNE_WEAPON_TALENT) &&
-                modules.empowerRuneWeapon.guideCastBreakdown}
-            </span>
+            <span>{modules.empowerRuneWeapon.guideCastBreakdown}</span>
           </SubSection>
         )}
       </Section>
@@ -88,13 +79,15 @@ function CooldownsSubsection({ modules, events, info }: GuideProps<typeof Combat
           />
         </div>
       )}
-      <div className="flex-main chart" style={{ padding: 5 }}>
-        <CastEfficiencyBar
-          spell={SPELLS.REMORSELESS_WINTER}
-          gapHighlightMode={GapHighlight.FullCooldown}
-          useThresholds
-        />
-      </div>
+      {!info.combatant.hasTalent(talents.FROZEN_DOMINION_TALENT) && (
+        <div className="flex-main chart" style={{ padding: 5 }}>
+          <CastEfficiencyBar
+            spell={SPELLS.REMORSELESS_WINTER}
+            gapHighlightMode={GapHighlight.FullCooldown}
+            useThresholds
+          />
+        </div>
+      )}
       {info.combatant.hasTalent(talents.BREATH_OF_SINDRAGOSA_TALENT) && (
         <div className="flex-main chart" style={{ padding: 5 }}>
           <CastEfficiencyBar

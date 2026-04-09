@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { defineMessage } from '@lingui/core/macro';
+import SPELLS from 'common/SPELLS';
 import talents from 'common/TALENTS/deathknight';
 import { SpellLink } from 'interface';
 import CooldownExpandable, {
@@ -7,7 +7,12 @@ import CooldownExpandable, {
 } from 'interface/guide/components/CooldownExpandable';
 import { explanationAndDataSubsection } from 'interface/guide/components/ExplanationRow';
 import Analyzer, { SELECTED_PLAYER, Options } from 'parser/core/Analyzer';
-import Events, { CastEvent, RemoveBuffEvent, FightEndEvent } from 'parser/core/Events';
+import Events, {
+  CastEvent,
+  RemoveBuffEvent,
+  RemoveBuffStackEvent,
+  FightEndEvent,
+} from 'parser/core/Events';
 import { ThresholdStyle } from 'parser/core/ParseResults';
 import BoringSpellValueText from 'parser/ui/BoringSpellValueText';
 import { QualitativePerformance } from 'parser/ui/QualitativePerformance';
@@ -15,15 +20,20 @@ import Statistic from 'parser/ui/Statistic';
 import { STATISTIC_ORDER } from 'parser/ui/StatisticBox';
 import { PerformanceMark } from 'interface/guide';
 
-const GOOD_BREATH_DURATION_MS = 25000;
+// Thresholds based on 8s base + 0.8s per proc — needs tuning with real Midnight data
+const GOOD_BREATH_DURATION_MS = 20000; // ~15 procs consumed
+const OK_BREATH_DURATION_MS = 12000; // ~5 procs consumed
+const GOOD_RP_TO_CAST = 80;
+const MIN_RP_TO_CAST = 65;
 
 class BreathOfSindragosa extends Analyzer {
   beginTimestamp = 0;
   casts = 0;
-  badCasts = 0;
   totalDuration = 0;
   startingRunicPower = 0;
   breathActive = false;
+  currentCastKmConsumed = 0;
+  currentCastRimeConsumed = 0;
 
   castTracker: breathCast[] = [];
 
@@ -42,6 +52,18 @@ class BreathOfSindragosa extends Analyzer {
       Events.removebuff.by(SELECTED_PLAYER).spell(talents.BREATH_OF_SINDRAGOSA_TALENT),
       this.onRemoveBuff,
     );
+    this.addEventListener(
+      Events.removebuff.by(SELECTED_PLAYER).spell(SPELLS.KILLING_MACHINE),
+      this.onKmConsume,
+    );
+    this.addEventListener(
+      Events.removebuffstack.by(SELECTED_PLAYER).spell(SPELLS.KILLING_MACHINE),
+      this.onKmConsume,
+    );
+    this.addEventListener(
+      Events.removebuff.by(SELECTED_PLAYER).spell(SPELLS.RIME),
+      this.onRimeConsume,
+    );
     this.addEventListener(Events.fightend, this.onFightEnd);
   }
 
@@ -51,22 +73,35 @@ class BreathOfSindragosa extends Analyzer {
       this.beginTimestamp = event.timestamp;
       this.breathActive = true;
       this.startingRunicPower = event.classResources?.at(0)?.amount ?? 0;
+      this.currentCastKmConsumed = 0;
+      this.currentCastRimeConsumed = 0;
     }
   }
 
   onRemoveBuff(event: RemoveBuffEvent) {
     this.breathActive = false;
     const duration = event.timestamp - this.beginTimestamp;
-    if (duration < GOOD_BREATH_DURATION_MS) {
-      this.badCasts += 1;
-    }
     this.totalDuration += duration;
     this.castTracker.push({
       timestamp: this.beginTimestamp,
       startingRunicPower: this.startingRunicPower / 10,
       duration: duration / 1000,
+      kmConsumed: this.currentCastKmConsumed,
+      rimeConsumed: this.currentCastRimeConsumed,
       fightEnded: false,
     });
+  }
+
+  onKmConsume(event: RemoveBuffEvent | RemoveBuffStackEvent) {
+    if (this.breathActive) {
+      this.currentCastKmConsumed += 1;
+    }
+  }
+
+  onRimeConsume(event: RemoveBuffEvent) {
+    if (this.breathActive) {
+      this.currentCastRimeConsumed += 1;
+    }
   }
 
   onFightEnd(event: FightEndEvent) {
@@ -76,6 +111,8 @@ class BreathOfSindragosa extends Analyzer {
         timestamp: this.beginTimestamp,
         startingRunicPower: this.startingRunicPower / 10,
         duration: duration / 1000,
+        kmConsumed: this.currentCastKmConsumed,
+        rimeConsumed: this.currentCastRimeConsumed,
         fightEnded: true,
       });
     }
@@ -83,7 +120,7 @@ class BreathOfSindragosa extends Analyzer {
 
   get tickingOnFinishedString() {
     return this.breathActive
-      ? 'Your final cast was not counted in the average since it was still ticking when the fight ended'
+      ? 'Your final cast was still active when the fight ended and was not counted in the average'
       : '';
   }
 
@@ -95,9 +132,9 @@ class BreathOfSindragosa extends Analyzer {
     return {
       actual: this.averageDuration,
       isLessThan: {
-        minor: 60.0,
-        average: 50.5,
-        major: 45.0,
+        minor: GOOD_BREATH_DURATION_MS / 1000,
+        average: OK_BREATH_DURATION_MS / 1000,
+        major: OK_BREATH_DURATION_MS / 1000 - 2,
       },
       style: ThresholdStyle.SECONDS,
       suffix: 'Average',
@@ -107,13 +144,9 @@ class BreathOfSindragosa extends Analyzer {
   statistic() {
     return (
       <Statistic
-        tooltip={`You started a new Breath of Sindragosa ${
-          this.casts
-        } times for a combined total of ${(this.totalDuration / 1000).toFixed(1)} seconds.  ${
-          this.badCasts
-        } casts were under ${GOOD_BREATH_DURATION_MS / 1000} seconds.  ${
-          this.tickingOnFinishedString
-        }`}
+        tooltip={`You cast Breath of Sindragosa ${this.casts} times for a combined total of ${(
+          this.totalDuration / 1000
+        ).toFixed(1)} seconds. ${this.tickingOnFinishedString}`}
         position={STATISTIC_ORDER.CORE(60)}
         size="flexible"
       >
@@ -132,14 +165,17 @@ class BreathOfSindragosa extends Analyzer {
         <b>
           <SpellLink spell={talents.BREATH_OF_SINDRAGOSA_TALENT} />
         </b>{' '}
-        is your most significant source of damage. Your goal is to maximize the duration of it by
-        playing around mechanics and maximizing your rp generation.
+        has a base duration of 8 seconds, extended by 0.8 seconds for every{' '}
+        <SpellLink spell={SPELLS.KILLING_MACHINE} /> or <SpellLink spell={SPELLS.RIME} /> proc
+        consumed while active. Activate it at the start of{' '}
+        <SpellLink spell={talents.PILLAR_OF_FROST_TALENT} /> and feed every proc to maximize its
+        duration.
       </p>
     );
 
     const data = (
       <div>
-        <strong>GCDs in Pillar of Frost</strong>
+        <strong>Per-Cast Breakdown</strong>
       </div>
     );
 
@@ -152,9 +188,11 @@ class BreathOfSindragosa extends Analyzer {
         <strong>
           <SpellLink spell={talents.BREATH_OF_SINDRAGOSA_TALENT} />
         </strong>{' '}
-        is your most important cooldown. To perform well with Frost, you need to make sure to
-        sustain its duration as long as possible. To help with this, you want to cast it when you
-        have enough resources pooled that you won't immediately drop it.
+        costs 60 Runic Power to activate and has a base duration of 8 seconds. Each{' '}
+        <SpellLink spell={SPELLS.KILLING_MACHINE} /> or <SpellLink spell={SPELLS.RIME} /> proc
+        consumed while it is active extends it by 0.8 seconds. Activate at the start of{' '}
+        <SpellLink spell={talents.PILLAR_OF_FROST_TALENT} /> with enough RP pooled, then feed every
+        proc into it.
       </p>
     );
 
@@ -171,36 +209,48 @@ class BreathOfSindragosa extends Analyzer {
           );
           const checklistItems: CooldownExpandableItem[] = [];
 
-          let rpPoolingPerf = QualitativePerformance.Good;
-          if (cast.startingRunicPower < 80) {
-            rpPoolingPerf = QualitativePerformance.Ok;
-          }
-          if (cast.startingRunicPower < 65) {
-            rpPoolingPerf = QualitativePerformance.Fail;
-          }
+          const rpPoolingPerf =
+            cast.startingRunicPower >= GOOD_RP_TO_CAST
+              ? QualitativePerformance.Good
+              : cast.startingRunicPower >= MIN_RP_TO_CAST
+                ? QualitativePerformance.Ok
+                : QualitativePerformance.Fail;
           checklistItems.push({
-            label: 'Runic Power Pooled',
+            label: 'Runic Power on cast',
             result: <PerformanceMark perf={rpPoolingPerf} />,
             details: <>{cast.startingRunicPower} RP</>,
           });
 
-          let durationPerf = QualitativePerformance.Good;
-          if (cast.duration * 1000 < GOOD_BREATH_DURATION_MS && !cast.fightEnded) {
-            durationPerf = QualitativePerformance.Ok;
-          }
-          if (cast.duration * 1000 < GOOD_BREATH_DURATION_MS - 5000 && !cast.fightEnded) {
-            durationPerf = QualitativePerformance.Fail;
-          }
+          const durationPerf = cast.fightEnded
+            ? QualitativePerformance.Good
+            : cast.duration * 1000 >= GOOD_BREATH_DURATION_MS
+              ? QualitativePerformance.Good
+              : cast.duration * 1000 >= OK_BREATH_DURATION_MS
+                ? QualitativePerformance.Ok
+                : QualitativePerformance.Fail;
           checklistItems.push({
             label: 'Breath duration',
             result: <PerformanceMark perf={durationPerf} />,
-            details: <>{cast.duration}s</>,
+            details: <>{cast.duration.toFixed(1)}s</>,
+          });
+
+          checklistItems.push({
+            label: 'Procs consumed',
+            result: <></>,
+            details: (
+              <>
+                {cast.kmConsumed} <SpellLink spell={SPELLS.KILLING_MACHINE} /> / {cast.rimeConsumed}{' '}
+                <SpellLink spell={SPELLS.RIME} />
+              </>
+            ),
           });
 
           const overallPerf =
-            cast.duration * 1000 > GOOD_BREATH_DURATION_MS || cast.fightEnded
+            cast.fightEnded || cast.duration * 1000 >= GOOD_BREATH_DURATION_MS
               ? QualitativePerformance.Good
-              : QualitativePerformance.Fail;
+              : cast.duration * 1000 >= OK_BREATH_DURATION_MS
+                ? QualitativePerformance.Ok
+                : QualitativePerformance.Fail;
 
           return (
             <CooldownExpandable
@@ -222,6 +272,8 @@ interface breathCast {
   timestamp: number;
   startingRunicPower: number;
   duration: number;
+  kmConsumed: number;
+  rimeConsumed: number;
   fightEnded: boolean;
 }
 
